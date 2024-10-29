@@ -1,0 +1,6 @@
+export UPLOAD_DIR="/home/ezetap/sftp/AXIS/atossettlementarchive"
+export EVENTS_API_KEY=""
+export UPLOAD_SLOT_1="10"
+export UPLOAD_SLOT_2="14"
+export UPLOAD_SLOT_3="16"
+export UPLOAD_SLOT_4="17"

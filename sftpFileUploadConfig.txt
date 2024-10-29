@@ -1,0 +1,6 @@
+export LOG_DIR="/home/ezetap/sftp/AXIS/cronlogs"
+export EVENTS_API_KEY=""
+export UPLOAD_SLOT_1="1055" 
+export UPLOAD_SLOT_2="1455" 
+export UPLOAD_SLOT_3="1655" 
+export UPLOAD_SLOT_4="1755"

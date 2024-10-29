@@ -28,10 +28,25 @@ CURRENT_DATE=$(date -u +"%Y%m%d")
 # Get the current hour and minute in the format HHMM
 CURRENT_TIME=$(date -u +"%H%M")
 
-# Function to send alert via curl
-send_alert() {
-    echo "Sending alert to $ALERT_URL"
-    curl -s "$ALERT_URL"
+# Function to trigger alert via curl
+trigger_alert() {
+    local summary="$1"
+    local alert_type="$2"
+    local message="$3"
+    local entity_id="some_entity_id"
+
+    # Check if EVENTS_API_KEY is set
+    if [ -z "$EVENTS_API_KEY" ]; then
+        echo "Error: EVENTS_API_KEY environment variable is not set."
+        return 1
+    fi
+
+    # Construct the URL using the environment variable
+    local url="https://events.zenduty.com/api/events/$EVENTS_API_KEY/"
+
+    curl -X POST "$url" \
+         -H "Content-Type: application/json" \
+         -d "{\"alert_type\":\"$alert_type\", \"message\":\"$message\", \"summary\":\"$summary\", \"entity_id\":\"$entity_id\"}"
 }
 
 # Function to construct log file name based on batch time (5 minutes earlier)
@@ -73,7 +88,7 @@ TARGET_LOG_PATH="$LOG_DIR/$TARGET_LOG"
 # Check if the log file exists
 if [[ ! -f "$TARGET_LOG_PATH" ]]; then
     echo "Log file $TARGET_LOG_PATH does not exist."
-    send_alert
+    trigger_alert "Please check SFTP upload logs on EMS server $LOG_DIR ." "critical" "Error while uploading settlement files to AXIS SFTP."
     exit 1                                                                
 fi
 
@@ -85,10 +100,5 @@ if echo "$LAST_LINES" | grep -q "Transfer finished"; then
     echo "Transfer finished successfully."
 else
     echo "Transfer not finished in file: $TARGET_LOG."
-    send_alert
+    trigger_alert "Please check SFTP upload logs on EMS server $LOG_DIR ." "critical" "Error while uploading settlement files to AXIS SFTP."
 fi
-
-
-
-# How to run the script
-# 55 10,14,16,17 * * * LOG_DIR="/home/ezetap/sftp/AXIS/cronlogs" ALERT_URL="Zenduty.com" UPLOAD_SLOT_1="1055" UPLOAD_SLOT_2="1455" UPLOAD_SLOT_3="1655" UPLOAD_SLOT_4="1755" /path/to/SftpFileUpload.sh
