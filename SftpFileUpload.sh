@@ -87,3 +87,4 @@ fi
 
 # How to run the script
 # 50 10,14,16,17 * * * LOG_DIR="/Users/afreen.ashraf/logFolder"  BATCH_1="1055" BATCH_2="1455" BATCH_3="1655" BATCH_3="1755" /path/to/SftpFileUpload.sh
+
