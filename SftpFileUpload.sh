@@ -6,12 +6,18 @@ if [[ -z "$LOG_DIR" ]]; then
     exit 1
 fi
 
-# Validate and set batch times from environment variables
-BATCH_TIMES=("${BATCH_1}" "${BATCH_2}" "${BATCH_3}" "${BATCH_4}")
+# Validate and set the alert URL from the environment variable
+if [[ -z "$ALERT_URL" ]]; then
+    echo "Error: ALERT_URL environment variable is not set."
+    exit 1
+fi
 
-for batch in "${BATCH_TIMES[@]}"; do
+# Validate and set batch times from environment variables
+UPLOAD_SLOTS=("${UPLOAD_SLOT_1}" "${UPLOAD_SLOT_2}" "${UPLOAD_SLOT_3}" "${UPLOAD_SLOT_4}")
+
+for batch in "${UPLOAD_SLOTS[@]}"; do
     if [[ -z "$batch" ]]; then
-        echo "Error: One or more batch times (BATCH_1, BATCH_2, BATCH_3, BATCH_4) are not set."
+        echo "Error: One or more batch times (UPLOAD_SLOT_1, UPLOAD_SLOT_2, UPLOAD_SLOT_3, UPLOAD_SLOT_4) are not set."
         exit 1
     fi
 done
@@ -24,9 +30,8 @@ CURRENT_TIME=$(date -u +"%H%M")
 
 # Function to send alert via curl
 send_alert() {
-    local url="https://www.google.com" #placeholder for hitting Zenduty.
-    echo "Sending alert to Zenduty"
-    curl -s "$url"
+    echo "Sending alert to $ALERT_URL"
+    curl -s "$ALERT_URL"
 }
 
 # Function to construct log file name based on batch time (5 minutes earlier)
@@ -55,9 +60,9 @@ construct_log_name() {
 }
 
 # Loop through the batch times to set the TARGET_LOG
-for i in "${!BATCH_TIMES[@]}"; do
-    if [[ "$CURRENT_TIME" == "${BATCH_TIMES[$i]}" ]]; then
-        TARGET_LOG=$(construct_log_name "${BATCH_TIMES[$i]}")
+for i in "${!UPLOAD_SLOTS[@]}"; do
+    if [[ "$CURRENT_TIME" == "${UPLOAD_SLOTS[$i]}" ]]; then
+        TARGET_LOG=$(construct_log_name "${UPLOAD_SLOTS[$i]}")
         break  
     fi
 done
@@ -86,4 +91,4 @@ fi
 
 
 # How to run the script
-# 55 10,14,16,17 * * * LOG_DIR="/home/ezetap/sftp/AXIS/cronlogs"  BATCH_1="1055" BATCH_2="1455" BATCH_3="1655" BATCH_3="1755" /path/to/SftpFileUpload.sh
+# 55 10,14,16,17 * * * LOG_DIR="/home/ezetap/sftp/AXIS/cronlogs" ALERT_URL="Zenduty.com" UPLOAD_SLOT_1="1055" UPLOAD_SLOT_2="1455" UPLOAD_SLOT_3="1655" UPLOAD_SLOT_4="1755" /path/to/SftpFileUpload.sh

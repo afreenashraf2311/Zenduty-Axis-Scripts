@@ -12,6 +12,12 @@ if [[ ! -d "$UPLOAD_DIR" ]]; then
     exit 1
 fi
 
+# Validate and set the alert URL from the environment variable
+if [[ -z "$ALERT_URL" ]]; then
+    echo "Error: ALERT_URL environment variable is not set."
+    exit 1
+fi
+
 # Define variables
 CURRENT_DATE=$(date +"%Y%m%d")
 CURRENT_READABLE_DATE=$(date +"%Y-%m-%d")
@@ -22,10 +28,10 @@ BATCH_NUMBER=""
 
 # Function to send alert via curl
 send_alert() {
-    local url="https://www.google.com" #placeholder for hitting Zenduty.
-    echo "Sending alert to Zenduty"
-    curl -s "$url"
+    echo "Sending alert to $ALERT_URL"
+    curl -s "$ALERT_URL"
 }
+
 # Determine which hour to check based on current time           
 case $HOUR in
     10) CHECK_HOUR="10" ; BATCH_NUMBER="1" ;;
@@ -75,5 +81,5 @@ fi
 
 
 # Command to run the script
-# 50 10,14,16,17 * * * UPLOAD_DIR="/home/ezetap/sftp/AXIS/atossettlementarchive" /path/to/EmsPosting.sh
+# 50 10,14,16,17 * * * UPLOAD_DIR="/home/ezetap/sftp/AXIS/atossettlementarchive" ALERT_URL="Zenduty.com" /path/to/EmsPosting.sh
 
