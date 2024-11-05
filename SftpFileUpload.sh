@@ -1,14 +1,16 @@
 #!/bin/bash
 
+source ./sftpFileUploadConfig.txt
+
 # Validate and set the log directory from the environment variable
 if [[ -z "$LOG_DIR" ]]; then
     echo "Error: LOG_DIR environment variable is not set."
     exit 1
 fi
 
-# Validate and set the alert URL from the environment variable
-if [[ -z "$ALERT_URL" ]]; then
-    echo "Error: ALERT_URL environment variable is not set."
+# Validate email receipient
+if [[ -z "$EMAIL_RECIPIENT" ]]; then
+    echo "Error: EMAIL_RECIPIENT environment variable is not set."
     exit 1
 fi
 
@@ -49,6 +51,24 @@ trigger_alert() {
          -d "{\"alert_type\":\"$alert_type\", \"message\":\"$message\", \"summary\":\"$summary\", \"entity_id\":\"$entity_id\"}"
 }
 
+# Function to send an email
+send_email() {
+    local recipient="$1"
+    local batch_number="$2"
+    local current_date="$3"
+
+    # Prepare email subject and body
+    local subject="Razopay: Axis Settlement Batch $batch_number for $current_date confirmation"
+    local body="Hi WorlLine Team,\n\nWe would like to confirm whether you have received the settlement files for batch $batch_number. Ensuring these files are successfully received is crucial for our ongoing operations.\n\n Please let us know at your earliest convenience.\n"
+
+    # Send the email
+    if echo -e "$body" | mail -s "$subject" "$recipient"; then
+        echo "Email sent successfully."
+    else
+        echo "Failed to send email."
+    fi
+}
+
 # Function to construct log file name based on batch time (5 minutes earlier)
 construct_log_name() {
     local batch_time="$1"
@@ -78,6 +98,7 @@ construct_log_name() {
 for i in "${!UPLOAD_SLOTS[@]}"; do
     if [[ "$CURRENT_TIME" == "${UPLOAD_SLOTS[$i]}" ]]; then
         TARGET_LOG=$(construct_log_name "${UPLOAD_SLOTS[$i]}")
+        batch_number=$((i + 1))
         break  
     fi
 done
@@ -98,6 +119,7 @@ LAST_LINES=$(tail -n 10 "$TARGET_LOG_PATH")
 # Validate the log content
 if echo "$LAST_LINES" | grep -q "Transfer finished"; then
     echo "Transfer finished successfully."
+    send_email "$EMAIL_RECIPIENT" "$batch_number" "$CURRENT_DATE"
 else
     echo "Transfer not finished in file: $TARGET_LOG."
     trigger_alert "Please check SFTP upload logs on EMS server $LOG_DIR ." "critical" "Error while uploading settlement files to AXIS SFTP."
