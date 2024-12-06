@@ -1,6 +1,5 @@
 #!/bin/bash
-
-source ./sftpFileUploadConfig.txt
+source /home/ezetap/axis_zenduty/scripts/sftpFileUploadConfig.txt
 
 # Validate and set the log directory from the environment variable
 if [[ -z "$LOG_DIR" ]]; then
@@ -26,6 +25,9 @@ done
 
 # Get the current date in the format YYYYMMDD
 CURRENT_DATE=$(date -u +"%Y%m%d")
+
+# Get current date in format YYYY-MM-DD
+CURRENT_DATE_FOR_EMAIL=$(date +"%Y-%m-%d")
 
 # Get the current hour and minute in the format HHMM
 CURRENT_TIME=$(date -u +"%H%M")
@@ -59,14 +61,17 @@ send_email() {
 
     # Prepare email subject and body
     local subject="Razopay: Axis Settlement Batch $batch_number for $current_date confirmation"
-    local body="Hi WorlLine Team,\n\nWe would like to confirm whether you have received the settlement files for batch $batch_number. Ensuring these files are successfully received is crucial for our ongoing operations.\n\n Please let us know at your earliest convenience.\n"
+    local body="Hi WorlLine Team,\n\nWe would like to confirm whether you have received the settlement files for batch $batch_number. Ensuring these files are successfully received is crucial for our ongoing operations.\n\nPlease let us know at your earliest convenience.\n"
 
-    # Send the email
-    if echo -e "$body" | mail -s "$subject" "$recipient"; then
-        echo "Email sent successfully."
-    else
-        echo "Failed to send email."
-    fi
+   # Use msmtp to send the email
+    echo -e "Subject: $subject\nTo: $recipient\n\n$body" | msmtp -t
+
+   # Check if the email was sent successfully
+   if [ $? -eq 0 ]; then
+     echo "Email sent successfully."
+   else
+     echo "Failed to send email."
+   fi
 }
 
 # Function to construct log file name based on batch time (5 minutes earlier)
@@ -99,7 +104,7 @@ for i in "${!UPLOAD_SLOTS[@]}"; do
     if [[ "$CURRENT_TIME" == "${UPLOAD_SLOTS[$i]}" ]]; then
         TARGET_LOG=$(construct_log_name "${UPLOAD_SLOTS[$i]}")
         batch_number=$((i + 1))
-        break  
+	break
     fi
 done
 
@@ -110,7 +115,7 @@ TARGET_LOG_PATH="$LOG_DIR/$TARGET_LOG"
 if [[ ! -f "$TARGET_LOG_PATH" ]]; then
     echo "Log file $TARGET_LOG_PATH does not exist."
     trigger_alert "Please check SFTP upload logs on EMS server $LOG_DIR ." "critical" "Error while uploading settlement files to AXIS SFTP."
-    exit 1                                                                
+    exit 1
 fi
 
 # Check the last few lines of the log file
@@ -119,7 +124,7 @@ LAST_LINES=$(tail -n 10 "$TARGET_LOG_PATH")
 # Validate the log content
 if echo "$LAST_LINES" | grep -q "Transfer finished"; then
     echo "Transfer finished successfully."
-    send_email "$EMAIL_RECIPIENT" "$batch_number" "$CURRENT_DATE"
+    send_email "$EMAIL_RECIPIENT" "$batch_number" "$CURRENT_DATE_FOR_EMAIL"
 else
     echo "Transfer not finished in file: $TARGET_LOG."
     trigger_alert "Please check SFTP upload logs on EMS server $LOG_DIR ." "critical" "Error while uploading settlement files to AXIS SFTP."
