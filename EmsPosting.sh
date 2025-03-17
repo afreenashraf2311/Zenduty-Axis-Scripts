@@ -12,12 +12,6 @@ if [[ ! -d "$UPLOAD_DIR" ]]; then
     exit 1
 fi
 
-# Validate ALERT_URL
-if [[ -z "$ALERT_URL" ]]; then
-    echo "Error: ALERT_URL environment variable is not set."
-    exit 1
-fi
-
 # Validate upload slot hours are set in the environment
 for i in {1..4}; do
     SLOT_VAR="UPLOAD_SLOT_$i"
